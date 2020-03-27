@@ -1,23 +1,5 @@
 // AFHTTPSessionManager.h
-// Copyright (c) 2011–2016 Alamofire Software Foundation ( http://alamofire.org/ )
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
+
 
 #import <Foundation/Foundation.h>
 #if !TARGET_OS_WATCH
@@ -34,29 +16,25 @@
 #import "AFURLSessionManager.h"
 
 /**
- `AFHTTPSessionManager` is a subclass of `AFURLSessionManager` with convenience methods for making HTTP requests. When a `baseURL` is provided, requests made with the `GET` / `POST` / et al. convenience methods can be made with relative paths.
+ `AFHTTPSessionManager` 是`AFURLSessionManager`用于简化HTTP请求的一个子类，当提供了`baseURL`，通过`GET` / `POST` /等进行方式进行请求，构造方法可以得到一个相对路径。
 
- ## Subclassing Notes
+ ## 补充点
 
- Developers targeting iOS 7 or Mac OS X 10.9 or later that deal extensively with a web service are encouraged to subclass `AFHTTPSessionManager`, providing a class method that returns a shared singleton object on which authentication and other configuration can be shared across the application.
+ 开发iOS7或者Mac OSX 10.9以后工程将广泛使用`AFHTTPSessionManager`进行网络请求，提供一个类方法返回一个具有认证和其他配置项的共享单例对象
+ 而对于开发 iOS 6 或者 Mac OS X 10.8 及以前的工程，使用AFHTTPRequestOperationManager 可能达到更简单的效果
 
- For developers targeting iOS 6 or Mac OS X 10.8 or earlier, `AFHTTPRequestOperationManager` may be used to similar effect.
+ ## 方法重写
+ 使用GET` / `POST` 等构造方法更改所有数据任务操作构造的行为，需要重写`dataTaskWithRequest:uploadProgress:downloadProgress:completionHandler:`.
+ 
+ ## 序列化
+ 创建一个HTTP客户端请求将包含一个遵循‘<AFURLRequestSerialization>’的默认请求头及‘requestSerializer’编码属性
+ 从服务端获取到的响应将自动转化成一个遵守`<AFURLResponseSerialization>`的序列化‘`responseSerializers`属性
+ 
+ ## URL 使用相对路径构成
 
- ## Methods to Override
+ 对于HTTP的方便方法，当提供了 ‘baseURL’ ，request serializer 通过`NSURL +URLWithString:relativeToURL:`,方法构造URLs，如果‘baseURL’为nil.那么请求路径需要使用`NSURL +URLWithString:`.来提供。
 
- To change the behavior of all data task operation construction, which is also used in the `GET` / `POST` / et al. convenience methods, override `dataTaskWithRequest:uploadProgress:downloadProgress:completionHandler:`.
-
- ## Serialization
-
- Requests created by an HTTP client will contain default headers and encode parameters according to the `requestSerializer` property, which is an object conforming to `<AFURLRequestSerialization>`.
-
- Responses received from the server are automatically validated and serialized by the `responseSerializers` property, which is an object conforming to `<AFURLResponseSerialization>`
-
- ## URL Construction Using Relative Paths
-
- For HTTP convenience methods, the request serializer constructs URLs from the path relative to the `-baseURL`, using `NSURL +URLWithString:relativeToURL:`, when provided. If `baseURL` is `nil`, `path` needs to resolve to a valid `NSURL` object using `NSURL +URLWithString:`.
-
- Below are a few examples of how `baseURL` and relative paths interact:
+ 下面是使用baseURL来构建相对路径的例子：
 
     NSURL *baseURL = [NSURL URLWithString:@"http://example.com/v1/"];
     [NSURL URLWithString:@"foo" relativeToURL:baseURL];                  // http://example.com/v1/foo
@@ -66,9 +44,8 @@
     [NSURL URLWithString:@"/foo/" relativeToURL:baseURL];                // http://example.com/foo/
     [NSURL URLWithString:@"http://example2.com/" relativeToURL:baseURL]; // http://example2.com/
 
- Also important to note is that a trailing slash will be added to any `baseURL` without one. This would otherwise cause unexpected behavior when constructing URLs using paths without a leading slash.
-
- @warning Managers for background sessions must be owned for the duration of their use. This can be accomplished by creating an application-wide or shared singleton instance.
+ 还需要注意的是，一个反斜杠会默认添加到'baseURL'的后面（如果没有的话），否则的如果URLs后面没有自己添加斜杠将会造成一些难以预测的行为
+ @warning 注意，在使用期间，必须拥有后台会话的管理者，这可以通过创建应用程序共享的单例实例来实现
  */
 
 NS_ASSUME_NONNULL_BEGIN
@@ -76,21 +53,20 @@ NS_ASSUME_NONNULL_BEGIN
 @interface AFHTTPSessionManager : AFURLSessionManager <NSSecureCoding, NSCopying>
 
 /**
- The URL used to construct requests from relative paths in methods like `requestWithMethod:URLString:parameters:`, and the `GET` / `POST` / et al. convenience methods.
+ 构建相对路径用于`GET` / `POST` / 等模式来请求的简便方法如`requestWithMethod:URLString:parameters:`
  */
 @property (readonly, nonatomic, strong, nullable) NSURL *baseURL;
 
 /**
- Requests created with `requestWithMethod:URLString:parameters:` & `multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:` are constructed with a set of default headers using a parameter serialization specified by this property. By default, this is set to an instance of `AFHTTPRequestSerializer`, which serializes query string parameters for `GET`, `HEAD`, and `DELETE` requests, or otherwise URL-form-encodes HTTP message bodies.
-
- @warning `requestSerializer` must not be `nil`.
+ 通过 `requestWithMethod:URLString:parameters:` & `multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:`等构造的请求将携带一些默认的请求头中的指定参数序列化。‘’，默认情况下，将其设置为“ AFHTTPRequestSerializer”的实例，该实例将“ GET”，“ HEAD”和“ DELETE”请求的查询字符串参数序列化，或者以其他方式对HTTP消息主体进行URL形式编码。
+ @warning `requestSerializer` 不能为nil
  */
 @property (nonatomic, strong) AFHTTPRequestSerializer <AFURLRequestSerialization> * requestSerializer;
 
 /**
- Responses sent from the server in data tasks created with `dataTaskWithRequest:success:failure:` and run using the `GET` / `POST` / et al. convenience methods are automatically validated and serialized by the response serializer. By default, this property is set to an instance of `AFJSONResponseSerializer`.
+ 在使用使用`GET` /`POST` /等模式通过`dataTaskWithRequest：success：failure：`创建的数据任务中，返回服务器的响应。 便捷方法由响应序列化程序自动验证并序列化。 默认情况下，此属性设置为“ AFJSONResponseSerializer”的实例。
 
- @warning `responseSerializer` must not be `nil`.
+ @warning `responseSerializer` 不能为nil
  */
 @property (nonatomic, strong) AFHTTPResponseSerializer <AFURLResponseSerialization> * responseSerializer;
 
@@ -99,7 +75,7 @@ NS_ASSUME_NONNULL_BEGIN
 ///-------------------------------
 
 /**
- The security policy used by created session to evaluate server trust for secure connections. `AFURLSessionManager` uses the `defaultPolicy` unless otherwise specified. A security policy configured with `AFSSLPinningModePublicKey` or `AFSSLPinningModeCertificate` can only be applied on a session manager initialized with a secure base URL (i.e. https). Applying a security policy with pinning enabled on an insecure session manager throws an `Invalid Security Policy` exception.
+ 创建的会话用来评估服务器对安全连接的信任度的安全策略。 除非另有说明，否则AFURLSessionManager会使用defaultPolicy。 使用“ AFSSLPinningModePublicKey”或“ AFSSLPinningModeCertificate”配置的安全策略只能应用于以安全URL（即https）初始化的session manager。 在不安全的session manager上启用了应用安全策略会引发“无效的安全策略”异常。
  */
 @property (nonatomic, strong) AFSecurityPolicy *securityPolicy;
 
@@ -108,23 +84,23 @@ NS_ASSUME_NONNULL_BEGIN
 ///---------------------
 
 /**
- Creates and returns an `AFHTTPSessionManager` object.
+ 创建并返回`AFHTTPSessionManager` 对象
  */
 + (instancetype)manager;
 
 /**
- Initializes an `AFHTTPSessionManager` object with the specified base URL.
+ 通过指定的base URL来初始化 `AFHTTPSessionManager` 对象
 
- @param url The base URL for the HTTP client.
+ @param url 初始的url
 
- @return The newly-initialized HTTP client
+ @return 返回一个AFHTTPSessionManager实例
  */
 - (instancetype)initWithBaseURL:(nullable NSURL *)url;
 
 /**
- Initializes an `AFHTTPSessionManager` object with the specified base URL.
+ 通过指定的base URL来初始化 `AFHTTPSessionManager` 对象
 
- This is the designated initializer.
+ 这是指定的初始化方法
 
  @param url The base URL for the HTTP client.
  @param configuration The configuration used to create the managed session.
@@ -139,12 +115,12 @@ NS_ASSUME_NONNULL_BEGIN
 ///---------------------------
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `GET` request.
+ 通过‘GET’请求创建并执行一个NSURLSessionDataTask
 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
 
  @see -dataTaskWithRequest:completionHandler:
  */
@@ -155,13 +131,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `GET` request.
+ 通过‘GET’请求创建并执行一个NSURLSessionDataTask
 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param downloadProgress A block object to be executed when the download progress is updated. Note this block is called on the session queue, not the main queue.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param downloadProgress 下载进度更新时进行的一个block回调。这个block是在session的队列进行响应的，而不是在主队列.
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
 
  @see -dataTaskWithRequest:uploadProgress:downloadProgress:completionHandler:
  */
@@ -172,14 +148,13 @@ NS_ASSUME_NONNULL_BEGIN
                                failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure DEPRECATED_ATTRIBUTE;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `GET` request.
- 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param headers The headers appended to the default headers for this request.
- @param downloadProgress A block object to be executed when the download progress is updated. Note this block is called on the session queue, not the main queue.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ 通过‘GET’请求创建并执行一个NSURLSessionDataTask
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param headers 请求头将拼接到默认请求头上
+ @param downloadProgress 下载进度更新时进行的一个block回调。这个block是在session的队列进行响应的，而不是在主队列.
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
  
  @see -dataTaskWithRequest:uploadProgress:downloadProgress:completionHandler:
  */
@@ -191,12 +166,12 @@ NS_ASSUME_NONNULL_BEGIN
                                failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `HEAD` request.
+ 通过‘HEAD’请求创建并执行一个NSURLSessionDataTask
 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes a single arguments: the data task.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
 
  @see -dataTaskWithRequest:completionHandler:
  */
@@ -206,13 +181,13 @@ NS_ASSUME_NONNULL_BEGIN
                        failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure DEPRECATED_ATTRIBUTE;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `HEAD` request.
- 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param headers The headers appended to the default headers for this request.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes a single arguments: the data task.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ 通过‘HEAD’请求创建并执行一个NSURLSessionDataTask
+
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param headers 请求头将拼接到默认请求头上
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
  
  @see -dataTaskWithRequest:completionHandler:
  */
@@ -223,12 +198,12 @@ NS_ASSUME_NONNULL_BEGIN
                                 failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `POST` request.
+ 通过‘POST’请求创建并执行一个NSURLSessionDataTask
 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
 
  @see -dataTaskWithRequest:completionHandler:
  */
@@ -238,13 +213,14 @@ NS_ASSUME_NONNULL_BEGIN
                        failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure DEPRECATED_ATTRIBUTE;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `POST` request.
+ 通过‘POST’请求创建并执行一个NSURLSessionDataTask
 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param uploadProgress A block object to be executed when the upload progress is updated. Note this block is called on the session queue, not the main queue.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param uploadProgress 上传进度更新时进行的一个block回调。这个block是在session的队列进行响应的，而不是在主队列.
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
+ 
 
  @see -dataTaskWithRequest:uploadProgress:downloadProgress:completionHandler:
  */
@@ -255,14 +231,14 @@ NS_ASSUME_NONNULL_BEGIN
                                 failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure DEPRECATED_ATTRIBUTE;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `POST` request.
- 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param headers The headers appended to the default headers for this request.
- @param uploadProgress A block object to be executed when the upload progress is updated. Note this block is called on the session queue, not the main queue.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ 通过‘POST’请求创建并执行一个NSURLSessionDataTask
+
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param headers 请求头将拼接到默认请求头上
+ @param uploadProgress 上传进度更新时进行的一个block回调。这个block是在session的队列进行响应的，而不是在主队列.
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
  
  @see -dataTaskWithRequest:uploadProgress:downloadProgress:completionHandler:
  */
@@ -274,13 +250,14 @@ NS_ASSUME_NONNULL_BEGIN
                                 failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a multipart `POST` request.
+ 通过‘POST’请求创建并执行一个NSURLSessionDataTask
 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param block A block that takes a single argument and appends data to the HTTP body. The block argument is an object adopting the `AFMultipartFormData` protocol.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param block  接受单个参数并将数据添加到HTTP body。 block参数是遵循了“ AFMultipartFormData”协议的对象。
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
+ 
 
  @see -dataTaskWithRequest:completionHandler:
  */
@@ -291,15 +268,14 @@ NS_ASSUME_NONNULL_BEGIN
                        failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure DEPRECATED_ATTRIBUTE;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a multipart `POST` request.
+ 通过‘POST’请求创建并执行一个NSURLSessionDataTask
 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param block A block that takes a single argument and appends data to the HTTP body. The block argument is an object adopting the `AFMultipartFormData` protocol.
- @param uploadProgress A block object to be executed when the upload progress is updated. Note this block is called on the session queue, not the main queue.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
-
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param block  接受单个参数并将数据添加到HTTP body。 block参数是遵循了“ AFMultipartFormData”协议的对象。
+ @param uploadProgress 上传进度更新时进行的一个block回调。这个block是在session的队列进行响应的，而不是在主队列.
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
  @see -dataTaskWithRequest:uploadProgress:downloadProgress:completionHandler:
  */
 - (nullable NSURLSessionDataTask *)POST:(NSString *)URLString
@@ -309,15 +285,15 @@ NS_ASSUME_NONNULL_BEGIN
                                 success:(nullable void (^)(NSURLSessionDataTask *task, id _Nullable responseObject))success
                                 failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure DEPRECATED_ATTRIBUTE;
 /**
- Creates and runs an `NSURLSessionDataTask` with a multipart `POST` request.
- 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param headers The headers appended to the default headers for this request.
- @param block A block that takes a single argument and appends data to the HTTP body. The block argument is an object adopting the `AFMultipartFormData` protocol.
- @param uploadProgress A block object to be executed when the upload progress is updated. Note this block is called on the session queue, not the main queue.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ 通过‘POST’请求创建并执行一个NSURLSessionDataTask
+
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param headers 请求头将拼接到默认请求头上
+ @param block  接受单个参数并将数据添加到HTTP body。 block参数是遵循了“ AFMultipartFormData”协议的对象。
+ @param uploadProgress 上传进度更新时进行的一个block回调。这个block是在session的队列进行响应的，而不是在主队列.
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
  
  @see -dataTaskWithRequest:uploadProgress:downloadProgress:completionHandler:
  */
@@ -330,12 +306,12 @@ NS_ASSUME_NONNULL_BEGIN
                                 failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `PUT` request.
+  通过‘PUT’请求创建并执行一个NSURLSessionDataTask
 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
 
  @see -dataTaskWithRequest:completionHandler:
  */
@@ -345,13 +321,13 @@ NS_ASSUME_NONNULL_BEGIN
                       failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure DEPRECATED_ATTRIBUTE;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `PUT` request.
- 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param headers The headers appended to the default headers for this request.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ 通过‘PUT’请求创建并执行一个NSURLSessionDataTask
+
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param headers 请求头将拼接到默认请求头上
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
  
  @see -dataTaskWithRequest:completionHandler:
  */
@@ -362,12 +338,12 @@ NS_ASSUME_NONNULL_BEGIN
                                failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `PATCH` request.
+ 通过‘PATCH’请求创建并执行一个NSURLSessionDataTask
 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
 
  @see -dataTaskWithRequest:completionHandler:
  */
@@ -377,13 +353,13 @@ NS_ASSUME_NONNULL_BEGIN
                         failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure DEPRECATED_ATTRIBUTE;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `PATCH` request.
- 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param headers The headers appended to the default headers for this request.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ 通过‘PATCH’请求创建并执行一个NSURLSessionDataTask
+
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param headers 请求头将拼接到默认请求头上
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
  
  @see -dataTaskWithRequest:completionHandler:
  */
@@ -394,12 +370,12 @@ NS_ASSUME_NONNULL_BEGIN
                                  failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `DELETE` request.
+ 通过‘DELETE’请求创建并执行一个NSURLSessionDataTask
 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
 
  @see -dataTaskWithRequest:completionHandler:
  */
@@ -409,13 +385,13 @@ NS_ASSUME_NONNULL_BEGIN
                          failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *error))failure DEPRECATED_ATTRIBUTE;
 
 /**
- Creates and runs an `NSURLSessionDataTask` with a `DELETE` request.
- 
- @param URLString The URL string used to create the request URL.
- @param parameters The parameters to be encoded according to the client request serializer.
- @param headers The headers appended to the default headers for this request.
- @param success A block object to be executed when the task finishes successfully. This block has no return value and takes two arguments: the data task, and the response object created by the client response serializer.
- @param failure A block object to be executed when the task finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes a two arguments: the data task and the error describing the network or parsing error that occurred.
+ 通过‘DELETE’请求创建并执行一个NSURLSessionDataTask
+
+ @param URLString 请求的URL.
+ @param parameters 请求参数
+ @param headers 请求头将拼接到默认请求头上
+ @param success 请求成功返回的回调
+ @param failure 请求失败，或者请求成功，但是返回数据异常
  
  @see -dataTaskWithRequest:completionHandler:
  */

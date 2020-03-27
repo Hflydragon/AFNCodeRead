@@ -1,23 +1,4 @@
 // AFSecurityPolicy.h
-// Copyright (c) 2011–2016 Alamofire Software Foundation ( http://alamofire.org/ )
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
 
 #import <Foundation/Foundation.h>
 #import <Security/Security.h>
@@ -29,9 +10,8 @@ typedef NS_ENUM(NSUInteger, AFSSLPinningMode) {
 };
 
 /**
- `AFSecurityPolicy` evaluates server trust against pinned X.509 certificates and public keys over secure connections.
-
- Adding pinned SSL certificates to your app helps prevent man-in-the-middle attacks and other vulnerabilities. Applications dealing with sensitive customer data or financial information are strongly encouraged to route all communication over an HTTPS connection with SSL pinning configured and enabled.
+“ AFSecurityPolicy” 对支持X.509证书和公钥验证的服务器信任并建立安全连接。
+ 添加 SSL 安全证书到你的app当中将可以有效的防止中间第三人攻击，强烈建议对数据敏感的客户或财务信息的应用程序配置并启用SSL的HTTPS连接来进行网络通讯。
  */
 
 NS_ASSUME_NONNULL_BEGIN
@@ -39,49 +19,45 @@ NS_ASSUME_NONNULL_BEGIN
 @interface AFSecurityPolicy : NSObject <NSSecureCoding, NSCopying>
 
 /**
- The criteria by which server trust should be evaluated against the pinned SSL certificates. Defaults to `AFSSLPinningModeNone`.
+  服务器信任的证书策略，默认为‘AFSSLPinningModeNone’
  */
 @property (readonly, nonatomic, assign) AFSSLPinningMode SSLPinningMode;
 
 /**
- The certificates used to evaluate server trust according to the SSL pinning mode. 
- 
- Note that if pinning is enabled, `evaluateServerTrust:forDomain:` will return true if any pinned certificate matches.
-
+ 用于根据SSL pinning 模式评估服务器信任度的证书。
+ 注意，如果启用了pinning，则任何pinning证书匹配，`evaluateServerTrust：forDomain：`都将返回true。
  @see policyWithPinningMode:withPinnedCertificates:
  */
 @property (nonatomic, strong, nullable) NSSet <NSData *> *pinnedCertificates;
 
 /**
- Whether or not to trust servers with an invalid or expired SSL certificates. Defaults to `NO`.
+ 如果证书无效或者过期了是否信任服务器，默认为‘NO’
  */
 @property (nonatomic, assign) BOOL allowInvalidCertificates;
 
 /**
- Whether or not to validate the domain name in the certificate's CN field. Defaults to `YES`.
-  是否在证书的CN字段中验证域名，默认是YES
+ 是否在证书的CN字段中验证域名，默认是YES
  */
 @property (nonatomic, assign) BOOL validatesDomainName;
 
 ///-----------------------------------------
-/// @name Getting Certificates from the Bundle
+/// @name 从Bundle中加载证书
 ///-----------------------------------------
 
 /**
- Returns any certificates included in the bundle. If you are using AFNetworking as an embedded framework, you must use this method to find the certificates you have included in your app bundle, and use them when creating your security policy by calling `policyWithPinningMode:withPinnedCertificates`.
+  返回bundle中的所有证书，如果使用了AFNetworking作为一个framework，你必须使用这个方法来加载你应用程序当中的证书，并且通过调用`policyWithPinningMode:withPinnedCertificates`.方法使用这些证书来建立安全策略
 
- @return The certificates included in the given bundle.
+ @return 返回bundle中的所有证书
  */
 + (NSSet <NSData *> *)certificatesInBundle:(NSBundle *)bundle;
 
 ///-----------------------------------------
-/// @name Getting Specific Security Policies
+/// @name 获取隐私策略
 ///-----------------------------------------
 
 /**
- Returns the shared default security policy, which does not allow invalid certificates, validates domain name, and does not validate against pinned certificates or public keys.
-
- @return The default security policy.
+ 返回一个默认的隐私策略，不允许使用无效证书，验证域名以及不对证书或公钥进行验证。
+ @return 返回默认的策略.
  */
 + (instancetype)defaultPolicy;
 
@@ -90,9 +66,8 @@ NS_ASSUME_NONNULL_BEGIN
 ///---------------------
 
 /**
- Creates and returns a security policy with the specified pinning mode.
- 
- Certificates with the `.cer` extension found in the main bundle will be pinned. If you want more control over which certificates are pinned, please use `policyWithPinningMode:withPinnedCertificates:` instead.
+ 创建并返回一个 具有指定策略的实例
+ 在主bundle中的‘.cer’证书是默认读取的，如果你想使用其他的证书，可以使用`policyWithPinningMode:withPinnedCertificates:`方法进行读取
 
  @param pinningMode The SSL pinning mode.
 
@@ -102,17 +77,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (instancetype)policyWithPinningMode:(AFSSLPinningMode)pinningMode;
 
-/**
- Creates and returns a security policy with the specified pinning mode.
 
- @param pinningMode The SSL pinning mode.
- @param pinnedCertificates The certificates to pin against.
-
- @return A new security policy.
-
- @see +certificatesInBundle:
- @see -pinnedCertificates
-*/
 + (instancetype)policyWithPinningMode:(AFSSLPinningMode)pinningMode withPinnedCertificates:(NSSet <NSData *> *)pinnedCertificates;
 
 ///------------------------------
@@ -120,11 +85,11 @@ NS_ASSUME_NONNULL_BEGIN
 ///------------------------------
 
 /**
- Whether or not the specified server trust should be accepted, based on the security policy.
+ 根据安全策略是否接受指定的服务器信任。
 
- This method should be used when responding to an authentication challenge from a server.
-
- @param serverTrust The X.509 certificate trust of the server.
+ 响应来自服务器的身份验证质询时，应使用此方法。
+ 
+ @param serverTrust The X.509 certificate trust of the server.（这里添加了说明）
  @param domain The domain of serverTrust. If `nil`, the domain will not be validated.
 
  @return Whether or not to trust the server.
