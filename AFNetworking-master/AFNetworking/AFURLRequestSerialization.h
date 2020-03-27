@@ -24,12 +24,12 @@ NS_ASSUME_NONNULL_BEGIN
  
  @param string 将要进行 percent-escaped 的字符串
  
- @return The percent-escaped string.
+ @return 转义百分比之后的字符串
  */
 FOUNDATION_EXPORT NSString * AFPercentEscapedStringFromString(NSString *string);
 
 /**
- A helper method to generate encoded url query parameters for appending to the end of a URL.
+ 通过这个方法将参数字典中的元素拼接到URL后面。
 
  @param parameters A dictionary of key/values to be encoded.
 
@@ -38,18 +38,18 @@ FOUNDATION_EXPORT NSString * AFPercentEscapedStringFromString(NSString *string);
 FOUNDATION_EXPORT NSString * AFQueryStringFromParameters(NSDictionary *parameters);
 
 /**
- The `AFURLRequestSerialization` protocol is adopted by an object that encodes parameters for a specified HTTP requests. Request serializers may encode parameters as query strings, HTTP bodies, setting the appropriate HTTP header fields as necessary.
+ 采用“ AFURLRequestSerialization”协议，该协议对指定HTTP请求的参数进行编码。 请求序列化程序可以将参数编码为查询字符串，HTTP正文，并根据需要设置适当的HTTP请求头字段。
 
- For example, a JSON request serializer may set the HTTP body of the request to a JSON representation, and set the `Content-Type` HTTP header field value to `application/json`.
+ 例如，JSON请求序列化程序可以将请求的HTTP主体设置为JSON请求，并将“ Content-Type” HTTP请求头字段设置为“ application / json”。
  */
 @protocol AFURLRequestSerialization <NSObject, NSSecureCoding, NSCopying>
 
 /**
- Returns a request with the specified parameters encoded into a copy of the original request.
+ 返回带有指定参数的请求，该请求编码为原始请求的副本。
 
- @param request The original request.
- @param parameters The parameters to be encoded.
- @param error The error that occurred while attempting to encode the request parameters.
+ @param request 原始请求
+ @param parameters 即将进行编码的参数
+ @param error 编码过程中发生的错误
 
  @return A serialized request.
  */
