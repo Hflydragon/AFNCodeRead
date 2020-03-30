@@ -62,7 +62,7 @@ FOUNDATION_EXPORT NSString * AFQueryStringFromParameters(NSDictionary *parameter
 #pragma mark -
 
 /**
-
+请求字符串编码
  */
 typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
     AFHTTPRequestQueryStringDefaultStyle = 0,
@@ -71,9 +71,9 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 @protocol AFMultipartFormData;
 
 /**
- `AFHTTPRequestSerializer` conforms to the `AFURLRequestSerialization` & `AFURLResponseSerialization` protocols, offering a concrete base implementation of query string / URL form-encoded parameter serialization and default request headers, as well as response status code and content type validation.
+ `AFHTTPRequestSerializer`遵循 `AFURLRequestSerialization` 和 `AFURLResponseSerialization`协议，提供查询字符串/ URL格式编码的参数序列化和默认请求标头的具体基础实现，以及响应状态代码和内容类型验证。
 
- Any request or response serializer dealing with HTTP is encouraged to subclass `AFHTTPRequestSerializer` in order to ensure consistent default behavior.
+ 为了保证默认行为的一致性，任何HTTP的的请求或者响应序列化必须继承自 `AFHTTPRequestSerializer`
  */
 @interface AFHTTPRequestSerializer : NSObject <AFURLRequestSerialization>
 
@@ -83,43 +83,45 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 @property (nonatomic, assign) NSStringEncoding stringEncoding;
 
 /**
- Whether created requests can use the device’s cellular radio (if present). `YES` by default.
+ 创建的请求是否可以使用设备的蜂窝数据（如果有）。 默认为YES。
 
  @see NSMutableURLRequest -setAllowsCellularAccess:
  */
 @property (nonatomic, assign) BOOL allowsCellularAccess;
 
 /**
- The cache policy of created requests. `NSURLRequestUseProtocolCachePolicy` by default.
+ 创建的请求缓存策略，默认是‘NSURLRequestUseProtocolCachePolicy’
 
  @see NSMutableURLRequest -setCachePolicy:
  */
 @property (nonatomic, assign) NSURLRequestCachePolicy cachePolicy;
 
 /**
- Whether created requests should use the default cookie handling. `YES` by default.
+ 创建请求是否使用默认的cookie handing,默认为YES.
+ 如果单个请求想不带cookie可以设置NSMutableURLRequest的HTTPShouldHandleCookies为NO。
 
  @see NSMutableURLRequest -setHTTPShouldHandleCookies:
  */
 @property (nonatomic, assign) BOOL HTTPShouldHandleCookies;
 
 /**
- Whether created requests can continue transmitting data before receiving a response from an earlier transmission. `NO` by default
+ 在收到来自较早传输的响应之前，创建的请求是否可以继续传输数据。 默认为“NO” 。
+ 通常默认情况下请求和响应是顺序的, 也就是说请求–>得到响应后,再请求.
+ 如果将HTTPShouldUsePipelining设置为YES, 则允许不必等到response, 就可以再次请求. 这个会很大的提高网络请求的效率,但是也可能会出问题.
+ 因为客户端无法正确的匹配请求与响应, 所以这依赖于服务器必须保证,响应的顺序与客户端请求的顺序一致.如果服务器不能保证这一点, 那可能导致响应和请求混乱.
 
  @see NSMutableURLRequest -setHTTPShouldUsePipelining:
  */
 @property (nonatomic, assign) BOOL HTTPShouldUsePipelining;
 
 /**
- The network service type for created requests. `NSURLNetworkServiceTypeDefault` by default.
-
+ 创建请求的网络服务类型。默认为‘NSURLNetworkServiceTypeDefault’
  @see NSMutableURLRequest -setNetworkServiceType:
  */
 @property (nonatomic, assign) NSURLRequestNetworkServiceType networkServiceType;
 
 /**
- The timeout interval, in seconds, for created requests. The default timeout interval is 60 seconds.
-
+ 请求超时时间，默认是60秒。
  @see NSMutableURLRequest -setTimeoutInterval:
  */
 @property (nonatomic, assign) NSTimeInterval timeoutInterval;
@@ -129,23 +131,21 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 ///---------------------------------------
 
 /**
- Default HTTP header field values to be applied to serialized requests. By default, these include the following:
+  应用于序列化请求的默认HTTP请求头字段值。 默认情况下，这些内容包括：
 
- - `Accept-Language` with the contents of `NSLocale +preferredLanguages`
- - `User-Agent` with the contents of various bundle identifiers and OS designations
-
+   -具有NSLocale + preferredLanguages内容的`Accept-Language`
+   -`User-Agent`，具有各种捆绑包标识符和操作系统名称的内容
  @discussion To add or remove default request headers, use `setValue:forHTTPHeaderField:`.
  */
 @property (readonly, nonatomic, strong) NSDictionary <NSString *, NSString *> *HTTPRequestHeaders;
 
 /**
- Creates and returns a serializer with default configuration.
+ 创建并返回一个默认配置的序列化实例
  */
 + (instancetype)serializer;
 
 /**
- Sets the value for the HTTP headers set in request objects made by the HTTP client. If `nil`, removes the existing value for that header.
-
+ 设置在HTTP客户端发出的请求对象中设置的HTTP请求头的值。 如果为nil，则删除该请求头的现有值。
  @param field The HTTP header to set a default value for
  @param value The value set as default for the specified header, or `nil`
  */
@@ -153,7 +153,7 @@ typedef NS_ENUM(NSUInteger, AFHTTPRequestQueryStringSerializationStyle) {
 forHTTPHeaderField:(NSString *)field;
 
 /**
- Returns the value for the HTTP headers set in the request serializer.
+ 返回在请求序列化程序中设置的HTTP标头的值。
 
  @param field The HTTP header to retrieve the default value for
 
@@ -162,8 +162,7 @@ forHTTPHeaderField:(NSString *)field;
 - (nullable NSString *)valueForHTTPHeaderField:(NSString *)field;
 
 /**
- Sets the "Authorization" HTTP header set in request objects made by the HTTP client to a basic authentication value with Base64-encoded username and password. This overwrites any existing value for this header.
-
+ 将HTTP客户端在请求对象中设置的“ Authorization” HTTP请求头设置为具有Base64编码的用户名和密码的基本身份验证值。 这将覆盖此请求头的任何现有值。
  @param username The HTTP basic auth username
  @param password The HTTP basic auth password
  */
@@ -171,7 +170,7 @@ forHTTPHeaderField:(NSString *)field;
                                        password:(NSString *)password;
 
 /**
- Clears any existing value for the "Authorization" HTTP header.
+ 清除“Authorization” HTTP标头的任何现有值。
  */
 - (void)clearAuthorizationHeader;
 
@@ -180,12 +179,13 @@ forHTTPHeaderField:(NSString *)field;
 ///-------------------------------------------------------
 
 /**
- HTTP methods for which serialized requests will encode parameters as a query string. `GET`, `HEAD`, and `DELETE` by default.
+ 序列化请求的HTTP方法会将参数编码为查询字符串。 默认情况下，`GET`，`HEAD`和`DELETE`。
+  解读：这里的意思是将`GET`，`HEAD`和`DELETE'的请求参数默认拼接到URL后面
  */
 @property (nonatomic, strong) NSSet <NSString *> *HTTPMethodsEncodingParametersInURI;
 
 /**
- Set the method of query string serialization according to one of the pre-defined styles.
+ 根据预定义的样式之一设置查询字符串序列化的方法。
 
  @param style The serialization style.
 
@@ -194,7 +194,7 @@ forHTTPHeaderField:(NSString *)field;
 - (void)setQueryStringSerializationWithStyle:(AFHTTPRequestQueryStringSerializationStyle)style;
 
 /**
- Set the a custom method of query string serialization according to the specified block.
+ 根据指定的block设置查询字符串序列化的自定义方法。
 
  @param block A block that defines a process of encoding parameters into a query string. This block returns the query string and takes three arguments: the request, the parameters to encode, and the error that occurred when attempting to encode parameters for the given request.
  */
@@ -205,9 +205,9 @@ forHTTPHeaderField:(NSString *)field;
 ///-------------------------------
 
 /**
- Creates an `NSMutableURLRequest` object with the specified HTTP method and URL string.
+ 使用指定的HTTP方法和URL字符串创建一个NSMutableURLRequest对象。
 
- If the HTTP method is `GET`, `HEAD`, or `DELETE`, the parameters will be used to construct a url-encoded query string that is appended to the request's URL. Otherwise, the parameters will be encoded according to the value of the `parameterEncoding` property, and set as the request body.
+ 如果HTTP方法是`GET`，`HEAD`或`DELETE`，则这些参数将用于构造附加到请求URL的url编码查询字符串。 否则，将根据“ parameterEncoding”属性的值对参数进行编码，并将其设置为请求正文。
 
  @param method The HTTP method for the request, such as `GET`, `POST`, `PUT`, or `DELETE`. This parameter must not be `nil`.
  @param URLString The URL string used to create the request URL.

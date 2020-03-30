@@ -86,7 +86,7 @@
 }
 
 #pragma mark -
-
+//校验是否有值
 - (void)setRequestSerializer:(AFHTTPRequestSerializer <AFURLRequestSerialization> *)requestSerializer {
     NSParameterAssert(requestSerializer);
 

@@ -31,7 +31,7 @@ static NSString * const AFAppDotNetAPIBaseURLString = @"https://api.app.net/";
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         _sharedClient = [[AFAppDotNetAPIClient alloc] initWithBaseURL:[NSURL URLWithString:AFAppDotNetAPIBaseURLString]];
-        _sharedClient.securityPolicy = [AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeNone];
+        _sharedClient.securityPolicy = [AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeNone];//这里其实就相当于defaultPolicy，但是这里可能会有证书，所以使用policyWithPinningMode初始化的好处是如果在mainBoundle中有cer证书，那么将会加载证书并解码publicKeys
     });
     
     return _sharedClient;
